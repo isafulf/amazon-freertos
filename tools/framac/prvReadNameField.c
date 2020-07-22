@@ -5,9 +5,8 @@
 
 /*@
     requires \valid(pucByte + (0 .. uxRemainingBytes - 1));
-    requires \separated(pucByte, pcName);
     requires \valid(pcName + (0 .. uxDestLen - 1));
-  
+
     assigns pcName[0 .. uxDestLen - 1];
 
     ensures uxRemainingBytes == ( size_t ) 0U ==> \result == 0U;
@@ -23,7 +22,7 @@ size_t uxSourceLen = uxRemainingBytes;
 
 /* uxCount gets the valus from pucByte and counts down to 0.
 No need to have a different type than that of pucByte */
-size_t uxCount;  
+size_t uxCount;
 
     if( uxSourceLen == ( size_t ) 0U )
     {
@@ -46,9 +45,6 @@ size_t uxCount;
     }
     else
     {
-        //@ assert uxIndex == 0;
-        //@ assert uxSourceLen > 0;
-        
         /* 'uxIndex' points to the full name. Walk over the string. */
         // loop variant uxSourceLen - uxIndex;
        /*@
@@ -58,7 +54,6 @@ size_t uxCount;
         */
         while( ( uxIndex < uxSourceLen ) && ( pucByte[ uxIndex ] != ( uint8_t )0x00U ) )
         {
-            //@ assert uxSourceLen == \at(uxRemainingBytes, Pre);
             /* If this is not the first time through the loop, then add a
             separator in the output. */
             if( ( uxNameLen > 0U ) )
@@ -69,7 +64,6 @@ size_t uxCount;
                     /* coverity[break_stmt] : Break statement terminating the loop */
                     break;
                 }
-                //@ assert uxNameLen < uxDestLen;
                 pcName[ uxNameLen ] = '.';
                 uxNameLen++;
             }
@@ -83,17 +77,11 @@ size_t uxCount;
                 break;
             }
 
-                //@ assert 0 <= uxCount;
-                //@ assert 0 <= uxIndex <= uxSourceLen;
-                //@ assert 0 <= uxNameLen <= uxDestLen;
-
             /*@
-                loop invariant 0 <= uxCount;
                 loop invariant 0 <= uxIndex <= uxSourceLen;
                 loop invariant 0 <= uxNameLen <= uxDestLen;
-                loop assigns pcName[\at(uxNameLen, LoopEntry) .. uxDestLen - 1], uxNameLen, uxIndex, uxCount;
-                loop variant uxCount;
-            */               
+                loop assigns pcName[0 .. uxDestLen - 1], uxNameLen, uxIndex, uxCount;
+            */
             while( ( uxCount-- != 0U ) && ( uxIndex < uxSourceLen ) )
             {
                 if( uxNameLen >= uxDestLen )
@@ -103,14 +91,11 @@ size_t uxCount;
                     /* break out of inner loop here
                     break out of outer loop at the test uxNameLen >= uxDestLen. */
                 }
-                //@ assert uxNameLen < uxDestLen;
-                //@ assert uxIndex < uxSourceLen;
                 pcName[ uxNameLen ] = ( char ) pucByte[ uxIndex ];
                 uxNameLen++;
                 uxIndex++;
-                //@ assert \at(pcName, Pre) == \at(pcName, Here);
-                //@ assert \at(pucByte, Pre) == \at(pucByte, Here);                
             }
+	    // One of these two seems essential, but not both
             //@ assert \at(pcName, Pre) == \at(pcName, Here);
             //@ assert \at(pucByte, Pre) == \at(pucByte, Here);
 
