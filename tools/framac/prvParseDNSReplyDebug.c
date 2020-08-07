@@ -68,7 +68,6 @@ typedef long BaseType_t;
 
 /*@
   assigns \nothing;
-  ensures is_uint16_t(\result);
 */
 static uint16_t usChar2u16(const uint8_t *apChr);
 static uint16_t usChar2u16(const uint8_t *apChr) {
@@ -358,7 +357,6 @@ static uint32_t prvParseDNSReply(uint8_t *pucUDPPayloadBuffer,
   /*
           loop invariant uxSourceBytesRemaining <= uxBufferLength;
   */
-
   // do
   // {
   size_t uxBytesRead = 0U;
@@ -371,24 +369,25 @@ static uint32_t prvParseDNSReply(uint8_t *pucUDPPayloadBuffer,
   uxSourceBytesRemaining -= sizeof(DNSMessage_t);
   // assert \valid(pucByte + (0 .. uxSourceBytesRemaining));
 
+//valid up to here
+
 // first for loop reads the first question and then skips all the next questions (each question is a name followed by 2 uint16_t's i.e. uint32_t)
   /*@
-    loop assigns uxResult;
-    loop assigns x;
-    loop assigns pcName[0 .. sizeof(pcName) - 1];
-    loop assigns pucByte;
-    loop assigns uxBytesRead;
-    loop assigns uxSourceBytesRemaining;
-    loop assigns uxResult;
+    loop assigns uxResult, x, pcName[0 .. sizeof(pcName) - 1], pucByte, uxBytesRead, uxSourceBytesRemaining, uxResult;
     loop invariant 0 <= x <= usQuestions;
+    loop invariant \valid(pucUDPPayloadBuffer + (0 .. uxBufferLength));
     loop invariant uxSourceBytesRemaining <= uxBufferLength;
-    loop invariant in_range(pucByte, pucUDPPayloadBuffer, uxBufferLength);
-    // loop invariant pucByte + uxSourceBytesRemaining - 1 == pucUDPPayloadBuffer + uxBufferLength - 1;
+    loop invariant pucUDPPayloadBuffer - pucByte <= uxSourceBytesRemaining;
+    loop invariant \valid(pucByte + (0 .. uxSourceBytesRemaining));
+    // loop invariant in_range(pucByte, pucUDPPayloadBuffer, uxBufferLength);
     loop variant usQuestions - x;
   */
   for (x = 0U; x < usQuestions; x++) {
+    //@ assert \at(pucUDPPayloadBuffer, Pre) == \at(pucUDPPayloadBuffer, Here);
+    //@ assert \at(uxBufferLength, Pre) == \at(uxBufferLength, Here);
     if (x == 0U) {
       //@ assert \valid(pcName + (0 .. sizeof(pcName) - 1));
+      //@ assert \valid(pucByte + (0 .. uxSourceBytesRemaining));
       uxResult = prvReadNameField(pucByte, uxSourceBytesRemaining, pcName,
                                   sizeof(pcName));
 
@@ -399,12 +398,12 @@ static uint32_t prvParseDNSReply(uint8_t *pucUDPPayloadBuffer,
         return dnsPARSE_ERROR;
       }
       uxBytesRead += uxResult;
-      //@assert in_range(pucByte, pucUDPPayloadBuffer, uxBufferLength);
-      //@assert in_range(&(pucByte[uxResult]), pucUDPPayloadBuffer, uxBufferLength);
+      // @assert in_range(pucByte, pucUDPPayloadBuffer, uxBufferLength);
+      // @assert in_range(&(pucByte[uxResult]), pucUDPPayloadBuffer, uxBufferLength);
       pucByte = &(pucByte[uxResult]);
-      //@assert in_range(pucByte, pucUDPPayloadBuffer, uxBufferLength);
+      // @assert in_range(pucByte, pucUDPPayloadBuffer, uxBufferLength);
       uxSourceBytesRemaining -= uxResult;
-      //@assert pucUDPPayloadBuffer - pucByte == uxSourceBytesRemaining;
+      // @assert pucUDPPayloadBuffer - pucByte == uxSourceBytesRemaining;
 
     } else
     {
@@ -421,7 +420,7 @@ static uint32_t prvParseDNSReply(uint8_t *pucUDPPayloadBuffer,
     }
 
     /* Check the remaining buffer size. */
-    //@assert in_range(pucByte, pucUDPPayloadBuffer, uxBufferLength);
+    // @assert in_range(pucByte, pucUDPPayloadBuffer, uxBufferLength);
     if (uxSourceBytesRemaining >= sizeof(uint32_t)) {
       /* Skip the type and class fields. */
       pucByte = &(pucByte[sizeof(uint32_t)]);
@@ -430,132 +429,10 @@ static uint32_t prvParseDNSReply(uint8_t *pucUDPPayloadBuffer,
     } else {
       return dnsPARSE_ERROR;
     }
-    //@assert in_range(pucByte, pucUDPPayloadBuffer, uxBufferLength);
+    // @assert in_range(pucByte, pucUDPPayloadBuffer, uxBufferLength);
   }
 
-  if ((usFlags & dnsRX_FLAGS_MASK) ==
-      dnsEXPECTED_RX_FLAGS) {
-    const uint16_t usCount = (uint16_t)ipconfigDNS_CACHE_ADDRESSES_PER_ENTRY;
 
-    /*@
-      loop assigns pucByte[0 .. uxSourceBytesRemaining-1];
-      loop assigns ulIPAddress;
-      loop assigns pucByte;
-      loop assigns uxSourceBytesRemaining;
-      loop assigns usQuestions;
-      loop assigns usType;
-      loop assigns xDoStore;
-      loop assigns uxBytesRead;
-      loop assigns uxResult;
-      loop assigns usDataLength;
-      loop assigns x;
-      loop invariant 0 <= x <= usAnswers;
-      loop invariant x <= usCount;
-      loop variant usAnswers - x;
-    */
-    for (x = 0U; (x < usAnswers) && (x < usCount); x++) {
-      BaseType_t xDoAccept;
 
-    //@ assert \valid(pucByte + (0 .. uxSourceBytesRemaining - 1));
-      uxResult = prvSkipNameField(pucByte, uxSourceBytesRemaining);
-
-      /* Check for a malformed response. */
-      if (uxResult == 0U) {
-        return dnsPARSE_ERROR;
-      }
-
-      uxBytesRead += uxResult;
-      pucByte = &(pucByte[uxResult]);
-      uxSourceBytesRemaining -= uxResult;
-
-      /* Is there enough data for an IPv4 A record answer and, if so,
-      is this an A record? */
-      if (uxSourceBytesRemaining < sizeof(uint16_t)) {
-        return dnsPARSE_ERROR;
-      }
-      usType = usChar2u16(pucByte);
-
-      if (usType == (uint16_t)dnsTYPE_A_HOST) {
-        if (uxSourceBytesRemaining >=
-            (sizeof(DNSAnswerRecord_t) + ipSIZE_OF_IPv4_ADDRESS)) {
-          xDoAccept = pdTRUE;
-        } else {
-          xDoAccept = pdFALSE;
-        }
-      } else {
-        /* Unknown host type. */
-        xDoAccept = pdFALSE;
-      }
-      if (xDoAccept != pdFALSE) {
-        /* This is the required record type and is of sufficient size. */
-        /* MISRA c 2012 rule 11.3 relaxed. pucByte is used for byte-by-byte
-        traversal. */
-        uint32_t ulTTL = getUlTTL(pucByte);
-        uint16_t usDatalength = getUsDataLength(pucByte);
-
-        /* Sanity check the data length of an IPv4 answer. */
-        if (usDataLength ==
-            (uint16_t)sizeof(uint32_t)) {
-          /* Copy the IP address out of the record. */
-          /* MISRA c 2012 rule 21.15 relaxed here since this seems
-          to be the least cumbersome way to get the IP address
-          from the record. */
-          (void)memcpy(&(ulIPAddress), &(pucByte[sizeof(DNSAnswerRecord_t)]),
-                       sizeof(uint32_t));
-          {
-            /* The reply will only be stored in the DNS cache when the
-            request was issued by this device. */
-            if (xDoStore != pdFALSE) {
-              (void)prvProcessDNSCache(pcName, &ulIPAddress,
-                                       ulTTL, pdFALSE);
-            }
-
-            /* Show what has happened. */
-	    //@ loop assigns \nothing;
-            FreeRTOS_printf(
-                ("DNS[0x%04lX]: The answer to '%s' (%lxip) will%s be stored\n",
-                 (UBaseType_t)usIdentifier, pcName,
-                 (UBaseType_t)FreeRTOS_ntohl(ulIPAddress),
-                 (xDoStore != 0) ? "" : " NOT"));
-          }
-        }
-
-        pucByte = &(pucByte[sizeof(DNSAnswerRecord_t) + sizeof(uint32_t)]);
-        uxSourceBytesRemaining -=
-            (sizeof(DNSAnswerRecord_t) + sizeof(uint32_t));
-      } else if (uxSourceBytesRemaining >= sizeof(DNSAnswerRecord_t)) {
-        /* It's not an A record, so skip it. Get the header location
-        and then jump over the header. */
-
-        /* MISRA c 2012 rule 11.3 relaxed as pucByte is being used in
-        various places to point to various parts of the DNS records */
-        usDataLength = getUsDataLength(pucByte);
-
-        pucByte = &(pucByte[sizeof(DNSAnswerRecord_t)]);
-        uxSourceBytesRemaining -= sizeof(DNSAnswerRecord_t);
-
-        /* Determine the length of the answer data from the header. */
-
-        /* Jump over the answer. */
-        if (uxSourceBytesRemaining >= usDataLength) {
-          pucByte = &(pucByte[usDataLength]);
-          uxSourceBytesRemaining -= usDataLength;
-        } else {
-          /* Malformed response. */
-          return dnsPARSE_ERROR;
-        }
-      } else {
-        /* Do nothing */
-      }
-    }
-  }
-  (void)uxBytesRead;
-  //	} while( ipFALSE_BOOL );
-
-  if (xExpected == pdFALSE) {
-    /* Do not return a valid IP-address in case the reply was not expected. */
-    ulIPAddress = 0UL;
-  }
-  (void)xDoStore;
   return ulIPAddress;
 }
