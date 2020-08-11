@@ -358,8 +358,12 @@ static uint32_t prvParseDNSReply(uint8_t *pucUDPPayloadBuffer,
   // uxSourceBytesRemaining -= sizeof(DNSMessage_t);
 
   /* Introduce a do {} while (0) to allow the use of breaks. */
-  // do
-  // {
+  /*@
+    loop assigns \nothing;
+    loop invariant sizeof(DNSMessage_t) <= uxSourceBytesRemaining <= uxBufferLength;
+  */
+  do
+  {
   size_t uxBytesRead = 0U;
   size_t uxResult;
 
@@ -650,7 +654,7 @@ static uint32_t prvParseDNSReply(uint8_t *pucUDPPayloadBuffer,
   }
 #endif /* ipconfigUSE_LLMNR == 1 */
   (void)uxBytesRead;
-// } while( ipFALSE_BOOL );
+  } while( ipFALSE_BOOL );
 
   if (xExpected == pdFALSE) {
     /* Do not return a valid IP-address in case the reply was not expected. */
