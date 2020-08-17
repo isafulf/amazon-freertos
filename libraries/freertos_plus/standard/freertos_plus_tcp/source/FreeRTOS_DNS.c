@@ -1123,6 +1123,7 @@ static uint16_t getUsDataLength(uint8_t *buffer) {
 static uint32_t prvParseDNSReply(uint8_t *pucUDPPayloadBuffer,
                                  size_t uxBufferLength, BaseType_t xExpected) {
   uint32_t ulIPAddress = 0UL;
+  uint8_t ulIPAddressBuffer[sizeof(uint32_t)] = {0, 0, 0, 0};
 #if (ipconfigUSE_LLMNR == 1)
   char *pcRequestedName = NULL;
 #endif
@@ -1239,7 +1240,8 @@ static uint32_t prvParseDNSReply(uint8_t *pucUDPPayloadBuffer,
     const uint16_t usCount = (uint16_t)ipconfigDNS_CACHE_ADDRESSES_PER_ENTRY;
 
     /*@
-      loop assigns ulIPAddress;
+      loop assigns *(ulIPAddressBuffer + (0 .. 3));
+	  loop assigns ulIPAddress;
       loop assigns pucByte;
       loop assigns uxSourceBytesRemaining;
       loop assigns usQuestions;
@@ -1298,8 +1300,9 @@ static uint32_t prvParseDNSReply(uint8_t *pucUDPPayloadBuffer,
           /* MISRA c 2012 rule 21.15 relaxed here since this seems
           to be the least cumbersome way to get the IP address
           from the record. */
-          (void)memcpy(&(ulIPAddress), &(pucByte[sizeof(DNSAnswerRecord_t)]),
+		  (void)memcpy(ulIPAddressBuffer, &(pucByte[sizeof(DNSAnswerRecord_t)]),
                        sizeof(uint32_t));
+		  ulIPAddress = getUint32(ulIPAddressBuffer, 0);
 
 #if (ipconfigDNS_USE_CALLBACKS == 1)
           {
@@ -1431,7 +1434,7 @@ static uint32_t prvParseDNSReply(uint8_t *pucUDPPayloadBuffer,
                     dnsCLASS_IN); /* 1: Class IN */
         vSetField32(pxAnswer, LLMNRAnswer_t, ulTTL, dnsLLMNR_TTL_VALUE);
         vSetField16(pxAnswer, LLMNRAnswer_t, usDataLength, 4);
-        vSetField32(pxAnswer, LLMNRAnswer_t, ulIPAddress,
+        vSetField32(pxAnswer, LLMNRAnswer_t,  ulIPAddress,
                     FreeRTOS_ntohl(*ipLOCAL_IP_ADDRESS_POINTER));
 #endif /* lint */
         usLength =
@@ -1453,7 +1456,7 @@ static uint32_t prvParseDNSReply(uint8_t *pucUDPPayloadBuffer,
 
   if (xExpected == pdFALSE) {
     /* Do not return a valid IP-address in case the reply was not expected. */
-    ulIPAddress = 0UL;
+     ulIPAddress = 0UL;
   }
 #if (ipconfigUSE_DNS_CACHE == 1) || (ipconfigDNS_USE_CALLBACKS == 1)
   (void)xDoStore;

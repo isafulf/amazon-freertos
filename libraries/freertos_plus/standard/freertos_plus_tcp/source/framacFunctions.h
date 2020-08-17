@@ -24,11 +24,6 @@
 static uint16_t usChar2u16(const uint8_t *apChr);
 
 /*@
-    assigns \nothing;
-*/
-void *memcpy(void *dest, const void *src, size_t n);
-
-/*@
     requires \valid(pucByte + (0 .. uxLength - 1));
     assigns \nothing;
     ensures 0 <= \result <= uxLength;
