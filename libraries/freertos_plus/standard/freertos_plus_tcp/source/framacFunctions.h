@@ -8,8 +8,6 @@
 #include <stddef.h>
 
 /*@
-    predicate is_uint8_t(integer n) =
-        0 <= n <= UCHAR_MAX;
     predicate is_uint16_t(integer n) =
         0 <= n <= USHRT_MAX;
     predicate is_uint32_t(integer n) =
