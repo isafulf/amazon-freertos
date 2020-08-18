@@ -883,6 +883,11 @@ static const DNSMessage_t xDefaultPartDNSHeader =
 		else
 		{
 			/* 'uxIndex' points to the full name. Walk over the string. */
+			/*@
+				loop invariant 0 <= uxIndex <= uxSourceLen;
+				loop invariant 0 <= uxNameLen <= uxDestLen;
+				loop assigns pcName[0 .. uxDestLen - 1], uxNameLen, uxIndex, uxCount;
+     		*/
 			while( ( uxIndex < uxSourceLen ) && ( pucByte[ uxIndex ] != ( uint8_t )0x00U ) )
 			{
 				/* If this is not the first time through the loop, then add a
@@ -908,6 +913,11 @@ static const DNSMessage_t xDefaultPartDNSHeader =
 					break;
 				}
 
+				/*@
+					loop invariant 0 <= uxIndex <= uxSourceLen;
+					loop invariant 0 <= uxNameLen <= uxDestLen;
+					loop assigns pcName[0 .. uxDestLen - 1], uxNameLen, uxIndex, uxCount;
+				*/
 				while( ( uxCount-- != 0U ) && ( uxIndex < uxSourceLen ) )
 				{
 					if( uxNameLen >= uxDestLen )
@@ -921,6 +931,9 @@ static const DNSMessage_t xDefaultPartDNSHeader =
 					uxNameLen++;
 					uxIndex++;
 				}
+				// One of these two seems essential, but not both
+				//@ assert \at(pcName, Pre) == \at(pcName, Here);
+				//@ assert \at(pucByte, Pre) == \at(pucByte, Here);
 			}
 
 			/* Confirm that a fully formed name was found. */
@@ -971,6 +984,12 @@ size_t uxIndex = 0U;
 	else
 	{
 		/* pucByte points to the full name. Walk over the string. */
+		/*@
+			loop invariant uxIndex + uxSourceLenCpy == uxLength;
+			loop invariant 0 <= uxIndex < uxLength;
+			loop assigns uxChunkLength, uxSourceLenCpy, uxIndex;
+			loop variant uxSourceLenCpy;
+    	*/
 		while( ( pucByte[ uxIndex ] != 0U ) && ( uxSourceLenCpy > 1U ) )
 		{
 			/* Conversion to size_t causes addition to be done
@@ -1139,6 +1158,10 @@ uint16_t usType = 0U;
 	usAnswers = getUsAnswers(pucUDPPayloadBuffer);
 
 	/* Introduce a do {} while (0) to allow the use of breaks. */
+	/*@
+		loop assigns \nothing;
+		loop invariant sizeof(DNSMessage_t) <= uxSourceBytesRemaining <= uxBufferLength;
+	*/
 	do
 	{
 	size_t uxBytesRead = 0U;
@@ -1148,6 +1171,17 @@ uint16_t usType = 0U;
 		pucByte = &( pucUDPPayloadBuffer [ sizeof( DNSMessage_t ) ] );
 		uxSourceBytesRemaining -= sizeof( DNSMessage_t );
 
+		/*@
+			loop assigns uxResult;
+			loop assigns x;
+			loop assigns pcName[0 .. sizeof(pcName) - 1];
+			loop assigns pucByte;
+			loop assigns uxBytesRead;
+			loop assigns uxSourceBytesRemaining;
+			loop assigns uxResult;
+			loop invariant \valid(pucByte + (0 .. uxSourceBytesRemaining - 1));
+			loop variant usQuestions - x;
+		*/
 		for( x = 0U; x < usQuestions; x++ )
 		{
 			#if( ipconfigUSE_LLMNR == 1 )
@@ -1221,6 +1255,21 @@ uint16_t usType = 0U;
 		{
 			const uint16_t usCount = ( uint16_t ) ipconfigDNS_CACHE_ADDRESSES_PER_ENTRY;
 
+			/*@
+				loop assigns *(ulIPAddressBuffer + (0 .. 3));
+				loop assigns ulIPAddress;
+				loop assigns pucByte;
+				loop assigns uxSourceBytesRemaining;
+				loop assigns usQuestions;
+				loop assigns usType;
+				loop assigns xDoStore;
+				loop assigns uxBytesRead;
+				loop assigns uxResult;
+				loop assigns usDataLength;
+				loop assigns x;
+				loop invariant \valid(pucByte + (0 .. uxSourceBytesRemaining - 1));
+				loop variant usAnswers - x;
+			*/
 			for( x = 0U; ( x < usAnswers ) && ( x < usCount ); x++ )
 			{
 			BaseType_t xDoAccept;
