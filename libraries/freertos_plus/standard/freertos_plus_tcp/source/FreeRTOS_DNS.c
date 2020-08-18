@@ -1107,6 +1107,7 @@ DNSMessage_t *pxDNSMessageHeader;
 /* This pointer is not used to modify anything */
 const DNSAnswerRecord_t *pxDNSAnswerRecord; 
 uint32_t ulIPAddress = 0UL;
+uint8_t ulIPAddressBuffer[sizeof(uint32_t)] = {0, 0, 0, 0};
 #if( ipconfigUSE_LLMNR == 1 )
 	char *pcRequestedName = NULL;
 #endif
@@ -1276,9 +1277,10 @@ uint16_t usType = 0U;
 						/* MISRA c 2012 rule 21.15 relaxed here since this seems
 						to be the least cumbersome way to get the IP address
 						from the record. */
-						( void ) memcpy( &( ulIPAddress ),
+						( void ) memcpy( ulIPAddressBuffer,
 										 &( pucByte[ sizeof( DNSAnswerRecord_t ) ] ),
 										 sizeof( uint32_t ) );
+						ulIPAddress = getUint32(ulIPAddressBuffer, 0);
 
 						#if( ipconfigDNS_USE_CALLBACKS == 1 )
 						{
