@@ -1248,7 +1248,7 @@ uint16_t usType = 0U;
 		if( ( usFlags & dnsRX_FLAGS_MASK ) == dnsEXPECTED_RX_FLAGS )
 		{
 			const uint16_t usCount = ( uint16_t ) ipconfigDNS_CACHE_ADDRESSES_PER_ENTRY;
-			
+
 			/*@
 				loop assigns *(ulIPAddressBuffer + (0 .. 3));
 				loop assigns ulIPAddress;
@@ -1314,7 +1314,7 @@ uint16_t usType = 0U;
 					uint16_t usDatalength = getUsDataLength(pucByte);
 
 					/* Sanity check the data length of an IPv4 answer. */
-					if( FreeRTOS_ntohs( usDataLength ) == ( uint16_t ) sizeof( uint32_t ) )
+					if(  usDataLength  == ( uint16_t ) sizeof( uint32_t ) )
 					{
 						/* Copy the IP address out of the record. */
 						/* MISRA c 2012 rule 21.15 relaxed here since this seems
