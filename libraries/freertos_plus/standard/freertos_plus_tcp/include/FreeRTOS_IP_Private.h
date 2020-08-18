@@ -736,9 +736,7 @@ static portINLINE uint32_t ulChar2u32 (const uint8_t *apChr)
 static portINLINE uint16_t usChar2u16 (const uint8_t *apChr);
 static portINLINE uint16_t usChar2u16 (const uint8_t *apChr)
 {
-	return ( uint16_t )
-			( ( ( ( uint32_t )apChr[0] ) << 8) |
-			  ( ( ( uint32_t )apChr[1] ) ) );
+	return apChr[0] * 256 + apChr[1];
 }
 
 /* Check a single socket for retransmissions and timeouts */
