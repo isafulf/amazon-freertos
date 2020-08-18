@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <stddef.h>
 
+#include "FreeRTOS_DNS.c"
+
 /*@
     predicate is_uint16_t(integer n) =
         0 <= n <= USHRT_MAX;

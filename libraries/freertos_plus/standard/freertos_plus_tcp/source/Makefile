@@ -63,4 +63,4 @@ FRAMAC = \
 	-cpp-extra-args="$(DEFINES) $(INCLUDES) $(CFLAGS)" \
 
 default:
-	frama-c -wp-fct=prvParseDNSReply,prvReadNameField,prvSkipNameField -rte -wp-timeout 10 $(FRAMAC) FreeRTOS_DNS.c -then -report 
+	frama-c -wp-fct=prvParseDNSReply,prvReadNameField,prvSkipNameField -rte -wp-timeout 10 $(FRAMAC) framacFunctions.h -then -report 
